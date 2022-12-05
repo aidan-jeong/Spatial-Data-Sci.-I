@@ -1,0 +1,532 @@
+---
+title: "Assignment 1"
+author: "YOUNG JUN JEONG"
+date: "18/JULY/2021"
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+# ASSIGNMENT 1: DESCRIPTIVE STATISTICS
+
+## PART 1: Non-spatial descriptive statistics
+
+#### OPTIONAL: INSTALL PACKAGES
+
+```{r, message=FALSE, warning=FALSE}
+# install.packages("rtools")
+# install.packages("tidyverse")
+# install.packages("sf")
+# install.packages("lwgeom")
+# install.packages("mapboxapi")
+# install.packages("leaflet")
+# install.packages("reshape2")
+# install.packages("geojsonio")
+```
+
+#### LOAD LIBRARIES
+
+```{r, message=FALSE, warning=FALSE}
+library("tidyverse")
+library("sf")
+library("lwgeom")
+library("mapboxapi")
+library("leaflet")
+library("reshape2")
+library("geojsonio")
+```
+
+#### IMPORT NON-SPATIAL DATA
+
+```{r, message=FALSE, warning=FALSE}
+listings <- read_csv("toronto-listings.csv")
+```
+
+------------------------------------------------------------------------
+
+### QUESTION 1 (5 marks)
+
+What does the following block of code accomplish? Answer according to
+the '\# Number' on each line.
+
+```{r, message=FALSE, warning=FALSE}
+listings$price <- substring(listings$price, 2, nchar(listings$price)-3) # 1
+listings$price <- as.numeric(listings$price) # 2
+
+listings <- listings %>% # 3
+  mutate(bathrooms = as.numeric(str_split_fixed(listings$bathrooms_text, " b", 2)[,1])) %>% # 4
+  filter(!is.na(room_type) & room_type == "Entire home/apt") # 5
+
+```
+
+**Written answer**:
+
+1.  Changed data in price column to have only integer part by substring
+    function
+2.  Changed listings\$price from character type to numemric type
+3.  Piping and applying the following functions to listings list
+4.  Created bathroom column which has character before ' b' in numeric
+    type
+5.  Retrieve only columns that room_type is not NA or equals to 'Entire
+    home/apt'
+
+################################################## 
+
+**DO NOT REMOVE \| FOR TEACHING ASSISTANTS ONLY** **GRADE/COMMENTS**
+
+* 1. 1
+* 2. 1
+* 3. 1
+* 4. 1
+* 5. 1
+
+
+################################################## 
+
+------------------------------------------------------------------------
+
+### QUESTION 2 (3 marks)
+
+What is the most frequent neighbourhood ("neighbourhood_cleansed") where
+Airbnbs are located in Toronto and how many Airbnbs are within the
+neighbourhood?
+
+```{r}
+neighbourhood_cleansed_df <- listings %>%
+  group_by(neighbourhood_cleansed) %>%
+  summarise(neighbourhood_cleansed_n = n()) %>%
+  filter(neighbourhood_cleansed_n == max(neighbourhood_cleansed_n))
+
+name_neighbourhood_cleansed <- as.character(neighbourhood_cleansed_df[,1])
+count_neighbourhood_cleansed <- as.numeric(neighbourhood_cleansed_df[,2])
+```
+
+**Written answer**: The most frequent neighbourhood where Airbnbs are
+located is **`r name_neighbourhood_cleansed `** with
+**`r count_neighbourhood_cleansed`** Airbnbs.
+
+################################################## 
+
+**DO NOT REMOVE \| FOR TEACHING ASSISTANTS ONLY** **GRADE/COMMENTS**
+
+* 2
+
+################################################## 
+
+------------------------------------------------------------------------
+
+### QUESTION 3 (2 marks)
+
+Some Airbnbs require you to rent the space for 2 or more nights. Create
+a new variable (i.e., column) in the listings dataframe to represent the
+minimum amount of money needed to rent the Airbnb. Name this variable
+total_cost. Additionally, remove NA values from the total_cost column
+(this will make things easier for you later).
+
+```{r}
+listings <- listings %>%
+  filter(!(is.na(minimum_nights) | is.na(price))) %>%
+  mutate(total_cost = price * minimum_nights)
+```
+
+################################################## 
+
+**DO NOT REMOVE \| FOR TEACHING ASSISTANTS ONLY** **GRADE/COMMENTS**
+
+* 1 wrong filter function: filter(!is.na(total_cost)) 
+
+
+################################################## 
+
+------------------------------------------------------------------------
+
+### QUESTION 4 (6 marks)
+
+What is the average (mean) and the median total cost of Airbnbs in
+Toronto with the following criteria (see below). Round your answers to
+one decimal place within the in-line code.
+
+1.  Minimum number of nights is equal to or less than 3
+2.  Number of bathrooms is equal to two or more
+
+```{r}
+mean_med_total_cost <- listings %>%
+  filter(minimum_nights <= 3 & bathrooms >= 2) %>%
+  summarise(mean_total_cost= mean(total_cost),
+            median_total_cost = median(total_cost)) %>%
+  round(digits = 1)
+mean_total_cost <- as.numeric(mean_med_total_cost[,1])
+median_total_cost <- as.numeric(mean_med_total_cost[,2])
+```
+
+**Written answer**: The average cost of an Airbnb in Toronto with a
+minimum of 3 or fewer nights is **`r mean_total_cost`** and the median
+cost is **`r median_total_cost`**
+
+################################################## 
+
+**DO NOT REMOVE \| FOR TEACHING ASSISTANTS ONLY** **GRADE/COMMENTS**
+
+* 6
+
+################################################## 
+
+------------------------------------------------------------------------
+
+### QUESTION 5 (2 marks)
+
+What does the mean and median tell us about the total cost of an Airbnb
+in Toronto?
+
+**Written answer**: The distribution of total cost of an Airbnb in
+Toronto is right-skewed since mean is larger than median.
+
+################################################## 
+
+**DO NOT REMOVE \| FOR TEACHING ASSISTANTS ONLY** **GRADE/COMMENTS**
+
+* 2
+
+################################################## 
+
+------------------------------------------------------------------------
+
+### QUESTION 6 (4 marks)
+
+Calculate the interquartile range of the total cost of Airbnbs that only
+require 1 night. Either create a new dataframe, or environment variables
+with the 25th and 75th percentile values. Make sure you can use the
+values in the next question.
+
+```{r}
+iqr_total_cost <- listings %>%
+  filter(minimum_nights == 1) %>%
+  summarise(q1_total_cost = quantile(total_cost, 0.25),
+            q3_total_cost = quantile(total_cost, 0.75)) %>%
+  mutate(iqr_total_cost = q3_total_cost - q1_total_cost)
+
+```
+
+**Written answer**: The interquartile range of total cost for one-night
+minimum Airbnbs in Toronto is **`r iqr_total_cost[1]` to
+`r iqr_total_cost[2]`**.
+
+################################################## 
+
+**DO NOT REMOVE \| FOR TEACHING ASSISTANTS ONLY** **GRADE/COMMENTS**
+
+* 4
+
+################################################## 
+
+------------------------------------------------------------------------
+
+### QUESTION 7 (4 marks)
+
+Create a boxplot with ggplot of the total cost of Airbnbs that only
+require 1 night. Make sure to label the y-axis of your boxplot.
+
+```{r}
+listings %>%
+  filter(minimum_nights == 1) %>%
+  ggplot(aes(x = 0, y = total_cost)) +
+  geom_boxplot() +
+  ylab('Total Cost')
+```
+
+################################################## 
+
+**DO NOT REMOVE \| FOR TEACHING ASSISTANTS ONLY** **GRADE/COMMENTS**
+
+* 4
+
+################################################## 
+
+------------------------------------------------------------------------
+
+### QUESTION 8 (3 marks)
+
+What does the interquartile range and boxplot tell us about the total
+cost of Airbnbs only requiring a one-night stay?
+
+**Written answer**: The IQR is defined as the range of middle-half (50%)
+of the total cost data is **`r iqr_total_cost[3]`**. 
+The boxplot tells
+that the data is extremely right-skewed.
+
+################################################## 
+
+**DO NOT REMOVE \| FOR TEACHING ASSISTANTS ONLY** **GRADE/COMMENTS**
+
+* 3
+
+################################################## 
+
+------------------------------------------------------------------------
+
+## PART 2: Spatial descriptive statistics
+
+#### IMPORT DATA
+
+```{r, message=FALSE, warning=FALSE}
+# IMPORT AND CONVERT DATA
+ls <- st_as_sf(listings, coords = c("longitude", "latitude"), crs = 4326) # Toronto Airbnb listings, ls = listings spatial
+ls <- st_transform(ls, crs = 32617)
+
+nbs <- st_read("toronto-neighbourhoods.geojson", crs = 4326) # Toronto neighbourhoods, nb = neighbourhoods
+nbs <- st_transform(nbs, crs = 32617)
+nbs_sp <- geojson_read("toronto-neighbourhoods.geojson", what = "sp") # Used for mapping
+
+poi <- st_read("Places-of-Interest-and-Attractions.geojson") # Points of Interest in Toronto, poi = Points of Interest
+
+poi_m <- st_transform(poi, crs = 32617) # poi_m = Points of Interest in meters
+
+# CREATE LAT/LON COLUMNS
+ls$coords <- as.character(ls$geometry)
+ls$coords <- substring(ls$coords, 3, nchar(ls$coords)-1)
+ls <- ls %>%
+  mutate(longitude_m = as.numeric(str_split_fixed(ls$coords, ", ", 2)[,1]),
+         latitude_m = as.numeric(str_split_fixed(ls$coords, ", ", 2)[,2]))
+
+poi$coords <- as.character(poi$geometry)
+poi$coords <- substring(poi$coords, 3, nchar(poi$coords)-1)
+poi <- poi %>%
+  mutate(longitude = as.numeric(str_split_fixed(poi$coords, ", ", 2)[,1]),
+         latitude = as.numeric(str_split_fixed(poi$coords, ", ", 2)[,2]))
+
+poi_m$coords <- as.character(poi_m$geometry)
+poi_m$coords <- substring(poi_m$coords, 3, nchar(poi_m$coords)-1)
+poi_m <- poi_m %>%
+  mutate(longitude_m = as.numeric(str_split_fixed(poi_m$coords, ", ", 2)[,1]),
+         latitude_m = as.numeric(str_split_fixed(poi_m$coords, ", ", 2)[,2]))
+
+
+nbs$coords <- as.character(nbs$geometry)
+nbs$coords <- substring(nbs$coords, 3, nchar(nbs$coords)-1)
+nbs <- nbs %>%
+  mutate(longitude = as.numeric(str_split_fixed(nbs$coords, ", ", 2)[,1]),
+         latitude = as.numeric(str_split_fixed(nbs$coords, ", ", 2)[,2]))
+```
+
+------------------------------------------------------------------------
+
+### QUESTION 9 (2 marks)
+
+You and 4 friends would like to rent an Airbnb in Toronto for 5 nights
+to spend some time in the city and visit Toronto's museums. You'd like
+to pay no more than \$250/night (collectively), the Airbnb must have at
+least 2 bathrooms, and the Airbnb must accommodate 5 or more people.
+Create a new dataframe considering your criteria.
+
+```{r}
+criteria_ls <- listings %>%
+  filter(minimum_nights <= 5 &
+      price <= 250 &
+      bathrooms >= 2 &
+      accommodates >= 5)
+```
+
+################################################## 
+
+**DO NOT REMOVE \| FOR TEACHING ASSISTANTS ONLY** **GRADE/COMMENTS**
+
+* 2
+
+################################################## 
+
+------------------------------------------------------------------------
+
+### QUESTION 10 (22 marks)
+
+You and your 4 friends would also like to stay in a neighbourhood that
+is in the middle of art gallery locations in the city, so you are
+located centrally.
+
+1.  Filter the Points of interest ('poi') dataframe to select only Art
+    Galleries ('Gallery')
+2.  Create 3 map icon/markers for the map. Be creative with your
+    icon/marker image, but make sure it is representative and the
+    resulting map is clear.
+3.  Create the leaflet map with:
+
+-   A basemap (your choice)
+
+-   An appropriate zoom level
+
+-   Map markers
+
+    -   Airbnbs
+    -   Art galleries with a popup with the gallery name
+    -   Mean centre of art galleries
+    -   Neighbourhoods with a popup with the neighbourhood name
+
+4.  Identify the neighbourhood where the mean centre of art galleries is
+    located.
+5.  Identify the lowest cost Airbnb within the identified neighbourhood.
+6.  Write a sentence identifying the following with inline code:
+
+-   Cheapest cost Airbnb within neighbourhood
+-   Cost of the Airbnb for a five-night stay
+-   A clickable URL link ('listing_url') to the Airbnb you will stay
+
+```{r}
+# 1. FILTER THE POINTS OF INTEREST
+poi <- poi %>%
+  filter(CATEGORY == 'Gallery')
+```
+
+################################################## 
+
+**DO NOT REMOVE \| FOR TEACHING ASSISTANTS ONLY** **GRADE/COMMENTS**
+
+################################################## 
+
+```{r}
+# 2. CREATE POINT MARKERS TO MAP YOUR POINTS
+# USE ANY MARKERS (i.e., PICTURES OFF THE INTERNET) YOU PLEASE, BUT MAKE SURE YOUR FINAL MAP IS LEGIBLE AND APPROPRIATE
+
+# AIRBNBs
+customPoint <- makeIcon(
+  iconUrl = "https://cdn.discordapp.com/attachments/771483303093600316/864514198809870356/wfwef.png",
+  iconWidth = 25, iconHeight = 25,
+  iconAnchorX = 12.5, iconAnchorY = 12.5
+)
+
+# ART GALLERIES
+artgallery_pts <- makeIcon(
+  iconUrl = "https://commonculture.org.uk/wp-content/uploads/leaflet-maps-marker-icons/heritage.png",
+  iconWidth = 30, iconHeight = 30,
+  iconAnchorX = 15, iconAnchorY = 15
+)
+
+
+# MEAN CENTRE
+mcIcon <- makeIcon(
+  iconUrl = "https://media.discordapp.net/attachments/771483303093600316/864443508311851008/circle-cropped.png",
+  iconWidth = 40, iconHeight = 40,
+  iconAnchorX = 20, iconAnchorY = 20
+)
+
+```
+
+################################################## 
+
+**DO NOT REMOVE \| FOR TEACHING ASSISTANTS ONLY** **GRADE/COMMENTS**
+
+################################################## 
+
+```{r}
+# 3. CREATE THE LEAFLET MAP
+leaflet() %>%
+  
+  # ADD MAP LAYER, BASEMAPS http://leaflet-extras.github.io/leaflet-providers/preview/index.html MAKE SURE THEY DO NOT REQUIRE AN API TOKEN
+  addProviderTiles(providers$CartoDB.DarkMatter) %>%
+  
+  # SET FIRST VIEW POINT (MAP CENTRE AND ZOOM LEVEL)
+  setView(lng = mean(criteria_ls$longitude),
+          lat = mean(criteria_ls$latitude),
+          zoom = 11.7) %>%
+  
+  # AIRBNBs (HINT: Use the dataframe from Q9)
+  addMarkers(lng = criteria_ls$longitude,
+             lat = criteria_ls$latitude,
+             icon = customPoint,
+             popup = paste(sep="<br/>",
+                           paste(criteria_ls$name),
+                           paste('Total cost: $',
+                                 paste('<b>',criteria_ls$total_cost,'</b>')))) %>%
+  
+  
+  # ART GALLERIES
+  addMarkers(lng = poi$longitude,
+             lat = poi$latitude,
+             icon = artgallery_pts,
+             popup = paste(poi$NAME)) %>%
+  
+  # MEAN CENTRE
+  addMarkers(lng = mean(poi$longitude),
+             lat = mean(poi$latitude),
+             icon = mcIcon,
+             popup = paste('Mean Center')) %>%
+  
+  # ADD NEIGHBOURHOODS (HINT: USE 'nbs_sp')
+  
+  addPolygons(data = nbs_sp,
+              color='aquamarine',
+              popup = paste('Neighbourhood:', nbs_sp$neighbourhood))
+
+
+
+```
+
+################################################## 
+
+**DO NOT REMOVE \| FOR TEACHING ASSISTANTS ONLY** **GRADE/COMMENTS**
+
+* 1 mark for centred view (all/most points visible)
+* 1 mark for appropriate zoom level (all/most points visible)
+* 2 marks for Airbnb markers
+* 2 marks for Art Gallery markers, 1 mark for pop-up functionality with Art Gallery name
+* 2 marks for Mean Centre marker
+* 1 marks for neighbourhood polygons, 1 mark for pop-up functionality with neighbourhood name
+
+################################################## 
+
+```{r}
+# PARTS 4, 5, AND 6
+# HINT: CLICK THE NEIGHBOURHOOD FOR A POPUP WITH THE NAME OF THE NEIGHBOURHOOD
+
+
+mc_poi_neighbourhood <- 'Bay Street Corridor'
+
+
+lowest_airbnb <- criteria_ls %>%
+  filter(neighbourhood_cleansed == mc_poi_neighbourhood) %>%
+  filter(total_cost == min(total_cost)) %>%
+  select(name, total_cost, listing_url)
+
+name_lowest_airbnb <- as.character(lowest_airbnb[,1])
+cost_lowest_airbnb <- as.numeric(lowest_airbnb[,2])
+listing_url <- as.character(lowest_airbnb[,3])
+```
+
+**Written answer**: The cheapest cost Airbnb is named **`r name_lowest_airbnb`**
+and it will cost **`r cost_lowest_airbnb`** dollars for the 5 night stay and the
+[Airbnb can be seen here](`r listing_url`).
+
+################################################## 
+
+**DO NOT REMOVE \| FOR TEACHING ASSISTANTS ONLY** **GRADE/COMMENTS**
+
+* 0 marks for name of Airbnb
+* 0 marks for total cost of 5 night stay
+* 1 marks for a URL link to Airbnb
+
+################################################## 
+
+------------------------------------------------------------------------
+
+### QUESTION 11 (3 marks)
+
+Is a neighbourhood a good method to search for an Airbnb based on the
+mean centre of Art Galleries? Why or why not?
+
+**Written answer**: No, as the leaflet map example shown above, it was a case
+that choosing a neighbourhood as a method for searching Airbnb becoming a
+problem due to Segmentation of Areal Units. The mean center was located very
+close to the borderline of one or two adjacent neighbourhood areas but 
+realistically the calculation of minimum total cost of Airbnb is done within
+the absolute boundary of the neighbourhood it locates.
+
+################################################## 
+
+**DO NOT REMOVE \| FOR TEACHING ASSISTANTS ONLY** **GRADE/COMMENTS**
+
+* 3
+
+################################################## 
+
+### Mistake:
+1) wrong filtering for NA total_cost
+2) total_cost is calculated wrong: has to be (number of nights) * (price).
